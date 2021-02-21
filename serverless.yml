@@ -1,0 +1,2141 @@
+service: mp-api
+
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+# package:
+#   exclude:
+#     - node_modules/**
+#     - schema/**
+
+# custom:
+#   customDomain:
+#     domainName: '3niix9rwkj.execute-api.ap-southeast-2.amazonaws.com' # Change this to your domain.
+#     basePath: 'v3' # This will be prefixed to all routes
+#     stage: ${self:provider.stage}
+#     createRoute53Record: false
+
+frameworkVersion: '2'
+
+
+provider:
+  # iamRoleStatements:
+  #   - Effect: 'Allow' # xray permissions (required)
+  #     Action:
+  #       - 'xray:PutTraceSegments'
+  #       - 'xray:PutTelemetryRecords'
+  #     Resource:
+  #       - '*'
+  #   - Effect: 'Allow'
+  #     Action:
+  #       - 's3:GetBucket'
+  #     Resource:
+  #       - '*'
+  #   - Effect: 'Allow'
+  #     Action:
+  #       - 's3:GetObject'
+  #       - 's3:PutObject'
+  #       - 's3:DeleteObject'
+  #       - 's3:ListBucket'
+  #     Resource:
+  #       - '*'
+  #   - Effect: 'Allow'
+  #     Action:
+  #       - dynamodb:PutItem
+  #       - dynamodb:GetItem
+  #     Resource:
+  #       - Fn::Join:
+  #           - ''
+  #           - - 'arn:aws:dynamodb:'
+  #             - Ref: 'AWS::Region'
+  #             - ':'
+  #             - Ref: 'AWS::AccountId'
+  #             - ':table/ITSubscriptions*'
+  # environment:
+  #   LOGGING_LEVEL: INFO
+  
+  
+  
+  name: aws
+  versionFunctions: false
+  runtime: nodejs12.x
+  region: ap-southeast-2
+  stage: uat
+  vpc: 
+    securityGroupIds:
+      - sg-01674dea18cf54c6a
+    subnetIds:
+      - subnet-029c192e013580f9f  
+  role: arn:aws:iam::688244660361:role/AdminApi-dev-ap-southeast-2-lambdaRole
+  apiGateway:
+    shouldStartNameWithService: true
+  # envirnonment:
+  #   tableName: ${self.custom.tableName}
+  #   bucketName: ${self.custom.bucketName}
+  #   imageUploadBucket: ${self.custom.imageUploadBucket}
+  # iamRoleStatements:
+  #   - Effect: 'Allow'
+  #     Action:
+  #       - 's3:*'
+  #     Resource: '*' 
+  # codeCommitRepository:
+  # Type: AWS::CodeCommit::Repository
+  # Properties:
+  #   RepositoryDescription: "for developer"
+  #   RepositoryName: "dev"
+  #   Triggers:
+  #     - trigger
+plugins:
+  - serverless-offline
+  #- serverless-aws-alias-fixed
+  - serverless-dependson-plugin
+  #- serverless-domain-manager
+  # - serverless-s3-sync
+# custom:
+#   customDomain:
+#     domainName: my.bountye.com
+#     basePath: api
+#     certificateName: '*.bountye.com'
+#     certificateArn: arn:aws:acm:ap-southeast-2:688244660361:certificate/dd918612-b7c6-4c91-8be5-8e61995ac51f
+#     createRoute53Record: false
+#     endpointType: 'regional'
+#     securityPolicy: tls_1_2
+#     apiType: rest
+#     autoDomain: false
+#     hostedZoneId: Z1I1XQT4F25YTI
+# custom:
+#   s3Sync:
+#     - bucketName: serverless01-dev-serverlessdeploymentbucket-3333
+#       localDir: uploadfile
+# you can add CloudFormation resource templates here
+# resources:
+#  Resources:
+#   ElasticSearchInstance:
+#       Type: AWS::Elasticsearch::Domain
+#       Properties:
+#         EBSOptions:
+#           EBSEnabled: true
+#           VolumeType: gp2
+#           VolumeSize: 10
+#         ElasticsearchClusterConfig:
+#           InstanceType: t2.small.elasticsearch
+#           InstanceCount: 1
+#           DedicatedMasterEnabled: false
+#           ZoneAwarenessEnabled: false
+#         ElasticsearchVersion: 5.3   
+functions:
+  healthy:
+    handler: src/health.getStatus
+    events:
+        - http: 
+            path: health/status
+            method: GET          
+            cors: true
+            integration: lambda
+# 2- buy click post
+  postbuyclick:
+    handler: src/buyclick.buyClickPost
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: buyclick
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            request:
+              template: 
+                # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{"request": "buyclick", "requesttype": "buyclick", "input_json" : "$input.json(`$`)", "device_id":  "$input.params(`device_id`)", "dashboard":  "$input.params(`dashboard`)", "session_id":  "$input.params(`device_id`)", "apikey":  "$input.params(`apikey`)", "app":  "$input.params(`app`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"}'
+                # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/postBuyClick.json)}
+                # application/json: '{ "request": "buyclick", "requesttype": "buyclick","input_json" : "$input.json("$")", "device_id":  "$input.params("device_id")", "dashboard":  "$input.params("dashboard")",
+                # "session_id":  "$input.params("device_id")","apikey":  "$input.params("apikey")","app":  "$input.params("app")","stage": "${stageVariables.stageName}","headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"}'
+               # schema:
+                # application/json: {'session_id':  '$input.params("device_id")'}
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'
+# 3- get categories
+  getcategories:
+    handler: src/category.getCategories
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/categories
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET          
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"categories", "level": "$input.params(`level`)", "userid": "$input.params(`userid`)", "featured": "$input.params(`featured`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getCategory.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            # response:
+            #   headers:
+            #     Content-Type: "'application/json'"
+            #   # template: ${file(response/getCategory.json)} 
+            #     application/json: $input.json('$.')
+            #   statusCodes:
+            #     200:
+            #       pattern: ""
+            #     401:
+            #       pattern: '.*"statusCode":401,.*'   
+# 4- post categories
+  postcategories:
+    handler: src/category.postCategories
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/categories
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST      
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"add_categories", "name": "$input.params(`name`)", "id": "$input.params(`id`)", "dashboard":  "$input.params(`dashboard`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/postCategory.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 5- put categories
+  putcategories:
+    handler: src/category.putCategories
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/categories
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"edit_categories", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/putCategory.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'  
+# 6- delet categories
+  delcategories:
+    handler: src/category.delCategories
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    
+    events:
+        - http: 
+            path: admin/categories
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: DELETE
+            cors: true
+            integration: lambda
+
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"delete_categories", "id": "$input.params(`id`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/delCategory.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)}               
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 7- put deals
+  putdeals:
+    handler: src/deal.putDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/deal
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "update", "requesttype": "deal", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/putDeal.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 8- post deals
+  postdeals:
+    handler: src/deal.postDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/deal
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "upload", "requesttype": "deal", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/postDeal.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 9- count deals
+  countdeals:
+    handler: src/deal.countDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/deal/count
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "count", "requesttype": "deal", "time": "$input.params(`time`)", "stage": "${stageVariables.stageName}", "app":"$input.params(`app`)", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/countDeal.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 10- search deals
+  searchdeals:
+    handler: src/deal.searchDealss
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/deal/search
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+                application/json: '{ "request":"search", "requesttype":"inspiration", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "query": "$input.params(`query`)", "categories":  "$input.params(`categories`)", "size":  "$input.params(`size`)", "from":  "$input.params(`from`)", "ordering":  "$input.params(`ordering`)", "filter":  "$input.params(`filter`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/searchDeal.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 11- getbyid deals
+  getbyiddeals:
+    handler: src/deal.getByIdDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/deal/getbyid
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getdealbyid", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "unprotected": "$input.params(`unprotected`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/dealGetById.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 12- post product
+  postproduct:
+    handler: src/product.postProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "upload", "requesttype": "product", "id": "$input.params(`id`)", "dashboard":  "$input.params(`dashboard`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/postProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+# 13- delete product
+  delproduct:
+    handler: src/product.delProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: DELETE
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "delete", "requesttype": "product", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/delProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'  
+# 14- put product
+  putproduct:
+    handler: src/product.putProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "update", "requesttype": "product", "dashboard":  "$input.params(`dashboard`)", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/putProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 15- count products
+  countproduct:
+    handler: src/product.countProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product/count
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "count", "requesttype": "product", "time": "$input.params(`time`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/countProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 16- simillar products
+  simillarproduct:
+    handler: src/product.simillarProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product/get_similar
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getsimilar", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/similar.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+# 17- get by id products
+  getbyidproduct:
+    handler: src/product.getbyidProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product/getbyid 
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getbyid", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getByIdProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 18- search products
+  searchproduct:
+    handler: src/product.searchProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/product/search
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"search", "requesttype":"product", "feed": "$input.params(`feed`)", "dashboard":  "$input.params(`dashboard`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "query": "$input.params(`query`)", "categories":  "$input.params(`categories`)", "stores":  "$input.params(`stores`)", "size":  "$input.params(`size`)", "from":  "$input.params(`from`)", "sort":  "$input.params(`sort`)", "filter":  "$input.params(`filter`)", "start_with": "$input.params(`start_with`)", "hidden": "$input.params(`hidden`)", "stage": "${stageVariables.stageName}", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/searchProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 19- post section
+  postsection:
+    handler: src/section.addSection
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/section
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "addsection", "app":"$input.params(`app`)", "dashboard":  "$input.params(`dashboard`)", "requesttype": "$input.params(`name`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/postSection.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 20- get section
+  getsection:
+    handler: src/section.getSection
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/section
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "getsection", "app":"$input.params(`app`)", "requesttype":"$input.params(`name`)", "userid": "$input.params(`userid`)", "dashboard": "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getSection.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+# 21- post service
+  postservice:
+    handler: src/service.postServiceReq
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/servicerequest
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "upload", "requesttype": "service_request", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/postServiceRequest.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 23- post store
+  poststore:
+    handler: src/store.postStore
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/store
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "upload", "requesttype": "store", "id": "$input.params(`id`)", "dashboard":  "$input.params(`dashboard`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/postStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+# 24- put store
+  putstore:
+    handler: src/store.putStore
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/store
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "update", "requesttype": "store", "id": "$input.params(`id`)", "input_json" : "$input.json(`$`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/putStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 25- delete store
+  delstore:
+    handler: src/store.delStore
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/store
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: DELETE
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "delete", "requesttype": "store", "id": "$input.params(`id`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/delStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 26- count store
+  countstore:
+    handler: src/store.countStore
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/store/count
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "count", "requesttype": "store", "time": "$input.params(`time`)", "dashboard": "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/countStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 27-get by id store
+  byidstore:
+    handler: src/store.getbyIdStore
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/store/getbyid
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getstorebyid", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getByIdStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'  
+# 28- search store
+  searchstore:
+    handler: src/store.searchStore
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/store/search
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"search", "requesttype":"store", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "categories":  "$input.params(`categories`)", "size":  "$input.params(`size`)", "from":  "$input.params(`from`)", "filter":  "$input.params(`filter`)", "query":  "$input.params(`query`)", "stage": "${stageVariables.stageName}", "search_type": "$input.params(`search_type`)", "feed":  "$input.params(`feed`)", "dashboard":  "$input.params(`dashboard`)", "apikey":  "$input.params(`apikey`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/searchStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 29 recent searches
+  recentsearch:
+    handler: src/usage.recSearch
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/usage/recentsearches
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"usage", "requesttype":"recent_searches", "userid": "$input.params(`userid`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/recSearch.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+#30 top search
+  topsearch:
+    handler: src/usage.topSearch
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/usage/topsearches
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"usage", "requesttype":"top_searches", "userid": "$input.params(`userid`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/topSearch.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+#32 categories api
+  getcategoriesapi:
+    handler: src/category.getCategoriess
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: categories
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"categories", "level": "$input.params(`level`)", "userid": "$input.params(`userid`)", "featured": "$input.params(`featured`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/getCategory.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            # response:
+            #   headers:
+            #     Content-Type: "'application/json'"
+            #   # template: ${file(response/getCategory.json)} 
+            #     application/json: $input.json('$.')
+            #   statusCodes:
+            #     200:
+            #       pattern: ""
+            #     401:
+            #       pattern: '.*"statusCode":401,.*'   
+#33 count deals api
+  countdealsapi:
+    handler: src/deal.countDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: deal/count
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "count", "requesttype": "deal", "time": "$input.params(`time`)", "stage": "${stageVariables.stageName}", "app":"$input.params(`app`)", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/countDeal.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+#34 search deals aoi
+  searchdealsapi:
+    handler: src/deal.searchDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: deal/search
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"search", "requesttype":"inspiration", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "query": "$input.params(`query`)", "categories":  "$input.params(`categories`)", "size":  "$input.params(`size`)", "from":  "$input.params(`from`)", "ordering":  "$input.params(`ordering`)", "filter":  "$input.params(`filter`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/searchDeal.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'  
+#35- getbyid deals api
+  getbyiddealsapi:
+    handler: src/deal.getByIdDeals
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: deal/getbyid
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getdealbyid", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "unprotected": "$input.params(`unprotected`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/dealGetById.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 36- count products api
+  countproductapi:
+    handler: src/product.countProducts
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: product/count
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "count", "requesttype": "product", "time": "$input.params(`time`)", "dashboard":  "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/countProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 37- simillar products api
+  simillarproductapi:
+    handler: src/product.simillarProduct
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: product/get_similar
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getsimilar", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/similar.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+# 38- get by id products api
+  getbyidproductapi:
+    handler: src/product.getbyidProducts
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: product/getbyid 
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)}  
+                application/json: '{ "request":"getbyid", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getByIdProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'   
+# 39- search products api
+  searchproductapi:
+    handler: src/product.searchProducts
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: product/search
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"search", "requesttype":"product", "feed": "$input.params(`feed`)", "dashboard":  "$input.params(`dashboard`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "query": "$input.params(`query`)", "categories":  "$input.params(`categories`)", "stores":  "$input.params(`stores`)", "size":  "$input.params(`size`)", "from":  "$input.params(`from`)", "sort":  "$input.params(`sort`)", "filter":  "$input.params(`filter`)", "start_with": "$input.params(`start_with`)", "hidden": "$input.params(`hidden`)", "stage": "${stageVariables.stageName}", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/searchProduct.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 40- get section api
+  getsectionapi:
+    handler: src/section.getSections
+    layers: 
+      - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: section
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "getsection", "app":"$input.params(`app`)", "requesttype":"$input.params(`name`)", "userid": "$input.params(`userid`)", "dashboard": "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getSection.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'    
+# 22- list service
+  listservice:
+    handler: src/service.serviceListAll
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/servicerequest/listall
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            # #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "list_all", "requesttype": "service_request", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            # #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            # #     application/json: ${file(templates/serviceList.json)} 
+            #     # application/json: $input.json('$.')
+            #   # schema:
+            #   #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'  
+# 41- list service api
+  listserviceapi:
+    handler: src/service.serviceListAlls
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: servicerequest/listall
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            # #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "list_all", "requesttype": "service_request", "stage": "${stageVariables.stageName}", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            # #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            # #     application/json: ${file(templates/serviceList.json)} 
+            #     # application/json: $input.json('$.')
+            #   # schema:
+            #   #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'  
+# 42- count store api
+  countstoreapi:
+    handler: src/store.countStores
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: store/count
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request": "count", "requesttype": "store", "time": "$input.params(`time`)", "dashboard": "$input.params(`dashboard`)", "stage": "${stageVariables.stageName}", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/countStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 43-get by id  api
+  byidstoreapi:
+    handler: src/store.getbyIdStores
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: store/getbyid
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"getstorebyid", "id": "$input.params(`id`)", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "dashboard":  "$input.params(`dashboard`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/getByIdStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'
+# 44- search store api
+  searchstoreapi:
+    handler: src/store.searchStores
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: store/search
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"search", "requesttype":"store", "userid": "$input.params(`userid`)", "fields": "$input.params(`fields`)", "categories":  "$input.params(`categories`)", "size":  "$input.params(`size`)", "from":  "$input.params(`from`)", "filter":  "$input.params(`filter`)", "query":  "$input.params(`query`)", "stage": "${stageVariables.stageName}", "search_type": "$input.params(`search_type`)", "feed":  "$input.params(`feed`)", "dashboard":  "$input.params(`dashboard`)", "apikey":  "$input.params(`apikey`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/searchStore.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'
+# 45 recent searches api
+  recentsearchapi:
+    handler: src/usage.recSearches
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: usage/recentsearches
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"usage", "requesttype":"recent_searches", "userid": "$input.params(`userid`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }'
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/recSearch.json)} 
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 46 top search api
+  topsearchapi:
+    handler: src/usage.topSearch
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: usage/topsearches
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+
+
+            cors: true
+            integration: lambda
+            request:
+              template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+                application/json: '{ "request":"usage", "requesttype":"top_searches", "userid": "$input.params(`userid`)", "stage": "${stageVariables.stageName}", "dashboard":  "$input.params(`dashboard`)", "app":"$input.params(`app`)", "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}" }' 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/topSearch.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'                   
+# 47 list users
+  listusers:
+    handler: src/acl.list
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/listusers
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/topSearch.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 48 list user groups
+  listgroups:
+    handler: src/acl.listgroups
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/listgroups
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/topSearch.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 49 top search api
+  adduser:
+    handler: src/acl.adduser
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/signup
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+            #     application/json: ${file(templates/topSearch.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 50 top search api
+  getuser:
+    handler: src/acl.getuser
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/getuser
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 51 
+  getgrp:
+    handler: src/acl.getgroupofuser
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/getgroupofuser
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# # 52 
+  getgroup:
+    handler: src/acl.getgroup
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/getgroup
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*'
+# 53 
+  updateuser:
+    handler: src/acl.updateuser
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/updateuser
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 54 
+  deluser:
+    handler: src/acl.deluser
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/deluser
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 55 
+  activate:
+    handler: src/acl.activate
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/activate
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 56 
+  deactivate:
+    handler: src/acl.deactivate
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/deactivate
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 57 
+  listingroup:
+    handler: src/acl.listUsersInGroup
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/listingroup
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 58 
+  addtogroup:
+    handler: src/acl.addUserToGroup
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/addtogroup
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: PUT
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 59 
+  delfromgroup:
+    handler: src/acl.RemoveUserFromGroup
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/acl/delfromgroup
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 60 
+  sortdealbyorder:
+    handler: src/deal.sort
+    # layers: 
+    #   - arn:aws:lambda:ap-southeast-2:688244660361:layer:mpdependencies:1
+    events:
+        - http: 
+            path: admin/deal/sort
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: POST
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 61 
+  getloggroups:
+    handler: src/log.getloggroups
+    events:
+        - http: 
+            path: admin/log/getgroups
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 62 
+  getlogsofgroup:
+    handler: src/log.getlogsofgroup
+    events:
+        - http: 
+            path: admin/log/getlogsofgroup
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 63 
+  getuserslog:
+    handler: src/log.getuserslog
+    events:
+        - http: 
+            path: admin/log/getuserslog
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 64 
+  singleuserlog:
+    handler: src/log.singleuserlog
+    events:
+        - http: 
+            path: admin/log/singleuserlog
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 65 
+  getlog:
+    handler: src/log.getlog
+    events:
+        - http: 
+            path: admin/log/getlog
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integration: lambda
+            # request:
+            #   template:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 
+# 66 
+  geterrors:
+    handler: src/log.geterrors
+    events:
+        - http: 
+            path: admin/log/geterrors
+            # path: "api/${env:API_PATH, self:custom.api.apiPath}"
+            # method: ${env:API_METHOD, self:custom.api.apiMethod}
+            method: GET
+            cors: true
+            integraest:
+            #   tetion: lambda
+            # requmplate:
+            #     # text/xhtml:  ${file(schema/serverless.template.request)} 
+            #     # application/json: ${file(schema/serverless.template.request)} 
+            #     # text/xhtml:  ${file(schema/templatefile.txt)}
+                # application/json: ${file(templates/empt.json)}
+                # application/json: $input.json('$.')
+              # schema:
+              #   application/json: ${file(schema/create_request.json)} 
+            response:
+              headers:
+                Content-Type: "'application/json'"
+              template: $input.json('$')
+              statusCodes:
+                200:
+                  pattern: ""
+                401:
+                  pattern: '.*"statusCode":401,.*' 

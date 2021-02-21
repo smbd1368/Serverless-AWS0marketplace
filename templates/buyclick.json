@@ -1,0 +1,10 @@
+{
+  "request": "search",
+  "requesttype": "buyclick",
+ "input_json" : "$input.json('$')",
+ "time": "$input.params('time')",
+ "stage": "${stageVariables.stageName}",
+ "app":"$input.params('app')",
+ "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+
+}

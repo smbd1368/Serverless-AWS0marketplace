@@ -1,0 +1,10 @@
+{
+  "request": "update",
+  "requesttype": "deal",
+  "id": "$input.params('id')",
+  "input_json" : "$input.json('$')",
+     "dashboard":  "$input.params('dashboard')",
+  "stage": "${stageVariables.stageName}",
+  "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+
+}

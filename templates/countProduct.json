@@ -1,0 +1,8 @@
+{
+  "request": "count",
+  "requesttype": "product",
+  "time": "$input.params(`time`)",
+  "dashboard":  "$input.params(`dashboard`)",
+  "stage": "${stageVariables.stageName}",
+  "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+}

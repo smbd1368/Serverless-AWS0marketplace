@@ -1,0 +1,12 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "The Root Schema",
+  "required": ["username"],
+  "properties": {
+    "username": {
+      "type": "string"
+    }
+  }
+}

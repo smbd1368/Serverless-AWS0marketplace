@@ -1,0 +1,22 @@
+#set($inputRoot = $input.path('$'))
+ 
+{
+    "input_json": $input.json('$'),
+    "method": "$context.httpMethod",
+    "principalId": "$context.authorizer.principalId",
+    "stage": "$context.stage",
+    "resourcePath" : "$context.resourcePath",
+    "cognitoPoolClaims" : {
+       "sub": "$context.authorizer.claims.sub"
+    },
+    #set( $map = $input.params().header )
+    "headers": $loop,
+    #set( $map = $input.params().querystring )
+    "query": $loop,
+    #set( $map = $input.params().path )
+    "path": $loop,
+    #set( $map = $context.identity )
+    "identity": $loop,
+    #set( $map = $stageVariables )
+    "stageVariables": $loop
+}

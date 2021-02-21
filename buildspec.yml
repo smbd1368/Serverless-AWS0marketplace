@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+    - rm package-lock.json
+    - npm install --silent --no-progress -g npm
+    - npm install --silent --no-progress -g serverless
+    #- npm install --silent --no-progress  --save-dev serverless-aws-alias-fixed
+    - npm --version
+  pre_build:
+    commands:
+    - npm install --silent --no-progress
+  build:
+    commands:
+    - npm run-script lint
+    - npm run test
+    - mkdir -p target/uat
+    - serverless package --package target/uat  --stage uat  -v -r ap-southeast-2
+artifacts:
+  files:
+  - target/**/*
+  - serverless.yml
+  - deploy.sh

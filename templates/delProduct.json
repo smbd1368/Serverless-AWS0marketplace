@@ -1,0 +1,10 @@
+{
+  "request": "delete",
+  "requesttype": "product",
+  "id": "$input.params(`id`)",
+  "input_json" : "$input.json(`$`)",
+  "stage": "${stageVariables.stageName}",
+     "dashboard":  "$input.params(`dashboard`)",
+     "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+
+}

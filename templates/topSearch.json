@@ -1,0 +1,9 @@
+{
+  "request":"usage",
+  "requesttype":"top_searches",
+  "userid": "$input.params(`userid`)",
+  "stage": "${stageVariables.stageName}",
+     "dashboard":  "$input.params(`dashboard`)",
+  "app":"$input.params(`app`)",
+  "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+}

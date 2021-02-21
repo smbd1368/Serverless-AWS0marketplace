@@ -1,0 +1,18 @@
+{
+    "request":"search",
+    "requesttype":"store",
+    "userid": "$input.params('userid')",
+    "fields": "$input.params('fields')",
+    "categories":  "$input.params('categories')",
+    "size":  "$input.params('size')",
+    "from":  "$input.params('from')",
+     "filter":  "$input.params('filter')",
+     "query":  "$input.params('query')",
+    "stage": "${stageVariables.stageName}",
+    "search_type": "$input.params('search_type')",
+     "feed":  "$input.params('feed')",
+        "dashboard":  "$input.params('dashboard')",
+     "apikey":  "$input.params('apikey')",
+    "app":"$input.params('app')",
+    "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+  }

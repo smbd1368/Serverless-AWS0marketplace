@@ -1,0 +1,16 @@
+{
+  "devDependencies": {
+    "aws-sdk": "^2.827.0",
+    "serverless": "^2.17.0",
+    "serverless-aws-alias-fixed": "^2.0.1",
+    "serverless-dependson-plugin": "^1.1.2",
+    "serverless-domain-manager": "^5.1.0",
+    "serverless-offline": "^6.8.0"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "^7.10.0",
+    "file-type": "^16.2.0",
+    "jwt-decode": "^3.1.2",
+    "unique-filename": "^1.1.1"
+  }
+}

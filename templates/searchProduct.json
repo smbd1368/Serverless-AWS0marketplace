@@ -1,0 +1,21 @@
+{
+    "request":"search",
+    "requesttype":"product",
+    "feed": "$input.params(`feed`)",
+    "dashboard":  "$input.params(`dashboard`)",
+    "userid": "$input.params(`userid`)",
+    "fields": "$input.params(`fields`)",
+    "query": "$input.params(`query`)",
+    "categories":  "$input.params(`categories`)",
+    "stores":  "$input.params(`stores`)",
+    "size":  "$input.params(`size`)",
+    "from":  "$input.params(`from`)",
+    "sort":  "$input.params(`sort`)",
+    "filter":  "$input.params(`filter`)",
+    "start_with": "$input.params(`start_with`)",
+    "hidden": "$input.params(`hidden`)",  
+    "stage": "${stageVariables.stageName}",
+    "app":"$input.params(`app`)",
+    "headers": "{#foreach($header in $input.params().header.keySet())\"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end#end}"
+
+  }

@@ -1,0 +1,18 @@
+
+
+{"input_json" : "$input.json('$')",
+   "request": "buyclick",
+  "requesttype": "buyclick",
+  "device_id":  "$input.params('device_id')",
+   "dashboard":  "$input.params('dashboard')",
+"session_id":  "$input.params('session_id')",
+"apikey":  "$input.params('apikey')",
+"app":  "$input.params('app')",
+  "stage": "${stageVariables.stageName}",
+  "httpMethod" : "$input.params('body')" 
+,"headers": {
+  "foreach($param in $input.params().header.keySet())",
+  "$param": "$util.escapeJavaScript($input.params().header.get($param))",
+  "if($foreach.hasNext)","end", "end" 
+  }
+}
